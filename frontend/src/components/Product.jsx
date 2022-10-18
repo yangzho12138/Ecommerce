@@ -1,21 +1,22 @@
 import React from 'react'
 import { Card } from 'react-bootstrap'
 import Rating from './Rating'
+import { Link } from 'react-router-dom'
 
 // {product} deconstruct the object
 const Product = ({product}) => { // the parameter here must be {product}, not product
     return (
     <Card className='my-3 p-3 rounded'>
-      <a href={`/product/${product._id}`}>
+      <Link to={`/product/${product._id}`}>
         <Card.Img src={product.image} variant='top' />
-      </a>
+      </Link>
       <Card.Body>
-        <a href={`/product/${product._id}`}>
+        <Link to={`/product/${product._id}`}>
             <Card.Title as='div'>
                 {/* strong tag emphasis the text */}
                 <strong>{product.name}</strong>
             </Card.Title>
-        </a>
+        </Link>
         <Card.Text as='div'>
             <Rating value={product.rating} text={`${product.numReviews} reviews`} />
         </Card.Text>
