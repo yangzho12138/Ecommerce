@@ -3,7 +3,7 @@ import { Card } from 'react-bootstrap'
 import Rating from './Rating'
 import { Link } from 'react-router-dom'
 
-// {product} deconstruct the object
+// {product} destructure the object
 const Product = ({product}) => { // the parameter here must be {product}, not product
     return (
     <Card className='my-3 p-3 rounded'>
