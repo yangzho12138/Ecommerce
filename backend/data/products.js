@@ -79,4 +79,6 @@ const products = [
   },
 ]
 
-export default products
+// module.exports = products
+// node.js using ES6 --> package.json: "type": "module",
+export default products;
