@@ -1,8 +1,11 @@
 import express from 'express'
-import products from './data/products.js' // node.js using ES6: not use require to get module
+import products from './data/products.js' // node.js using ES6: not use require to get module --> must have .js
 import dotenv from 'dotenv'
+import connectDB from './config/db.js'
 
 dotenv.config()
+
+connectDB()
 
 const app = express()
 
