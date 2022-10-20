@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import Product from '../../frontend/src/components/Product';
 
 const reviewSchema = mongoose.Schema({
     name:{
