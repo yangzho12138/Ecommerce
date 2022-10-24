@@ -1,0 +1,20 @@
+import { PRODUCT_LIST_REQUEST, PRODUCT_LIST_SUCCESS, PRODUCT_LIST_FAIL } from "../constants/productConstants"
+import axios from "axios"
+
+// actual actions
+// redux thunk allows us to do is add a function within a function
+export const listProducts = () => async (dispatch) => {
+    try{
+        dispatch({ type: PRODUCT_LIST_REQUEST })
+
+        const { data } = await axios.get('/api/products')
+
+        dispatch({ type: PRODUCT_LIST_SUCCESS, payload: data})
+    }catch (error){
+        dispatch({ 
+            type: PRODUCT_LIST_FAIL, 
+            //  error.response.data.message: errorHandler message in backend
+            payload: error.response && error.response.data.message ? error.response.data.message : error.message
+        })
+    }
+}

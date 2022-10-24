@@ -1,28 +1,42 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect } from 'react'
+import { useDispatch, useSelector  } from 'react-redux'
 import { Row, Col } from 'react-bootstrap'
 import Product from '../components/Product'
-import axois from 'axios'
+import Message from '../components/Message'
+import Loader from '../components/Loader'
+import { listProducts } from '../actions/productActions'
 
 const HomeScreen = () => {
-  const [products, setProducts] = useState([]);
+  const dispatch = useDispatch();
+
+  const productList = useSelector(state => state.productList); // productList: the name in state of productListReducer in store.js
+  const { loading, error, products } = productList; // return value from productListReducer
+
   useEffect(() => {
-    const fetchProducts = async() => {
-      const {data} = await axois.get('/api/products');
-      setProducts(data);
-    };
-    fetchProducts();
-  }, [])
+    // const fetchProducts = async() => {
+    //   const {data} = await axois.get('/api/products');
+    //   setProducts(data);
+    // };
+    // fetchProducts();
+
+    // using redux to get data from backend
+    dispatch(listProducts())
+    
+  }, [dispatch])
+
   return (
     <>
         <h1>Latest Products</h1>
-        <Row>
+        {loading ? <Loader /> : error ? <Message variant='danger'>{error}</Message> : 
+          <Row>
             {products.map(product => (
                 // sm->md->lg->xl means different screen size
                 <Col key={product._id} sm={12} md={6} lg={4} xl={3}>
                     <Product product={product} />
                 </Col>
             ))}
-        </Row>
+          </Row>
+        }
     </>
   )
 }
