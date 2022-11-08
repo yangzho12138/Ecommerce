@@ -27,7 +27,7 @@ const RegisterScreen = () => {
     useEffect(() => {
       // if user has already login
       if(userInfo){
-          navigate(redirect);
+          navigate('/'+redirect);
       }
     }, [navigate, redirect, userInfo])
 
