@@ -24,7 +24,10 @@ const LoginScreen = () => {
     useEffect(() => {
       // if user has already login
       if(userInfo){
-          navigate('/'+redirect); // without'/'+, the url will be /login/${redirect}, now it will be ${redirecr}
+          if(redirect !== '/')
+            navigate('/'+redirect); // without'/'+, the url will be /login/${redirect}, now it will be ${redirecr}
+          else
+            navigate('/')
       }
     }, [navigate, redirect, userInfo])
 
