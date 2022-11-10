@@ -1,17 +1,25 @@
-import React, { useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
+import axios from 'axios';
+import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";
 import { Link, useParams } from 'react-router-dom'
 import { Button, Row, Col, ListGroup, Image, Card } from 'react-bootstrap'
 import { useDispatch, useSelector } from 'react-redux';
 import Message from '../components/Message';
 import Loader from '../components/Loader';
-import { getOrderDetails } from '../actions/orderActions';
+import { getOrderDetails, payOrder } from '../actions/orderActions';
+import { ORDER_PAY_RESET } from '../constants/orderConstants';
 
 const OrderScreen = () => {
     const params = useParams()
     const orderId = params.id
+    // after paypal sdk script ready, we can use paypal
+    const [sdkReady, setSdkReady] = useState(false)
 
     const orderDetails = useSelector(state => state.orderDetails)
     const { order, loading, error } = orderDetails
+
+    const orderPay = useSelector(state => state.orderPay)
+    const { loading: loadingPay, success: successPay } = orderPay // rename
 
     if(!loading){
         // Keep two decimal places
@@ -25,11 +33,40 @@ const OrderScreen = () => {
 
     const dispatch = useDispatch()
     useEffect(() => {
-        // if the orderId does not match the id in URL, use dispatch to fetch the most recent order
-        if(!order || order._id !== orderId ){
-            dispatch(getOrderDetails(orderId))
+      const addPayPalScript = async() => {
+        // must have data: the return value is a response and the id is stored in data section
+        const { data: clientId } = await axios.get('/api/config/paypal')
+        const script = document.createElement('script')
+        script.type = 'text/javascript'
+        // paypal sdk script <script src="https://www.paypal.com/sdk/js?client-id=YOUR_CLIENT_ID"></script> dynamic adding paypal script to html
+        script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}`
+        script.async = true
+        // script has been loaded
+        script.onload = () => {
+          setSdkReady(true)
         }
-    }, [dispatch, orderId, order])
+        document.body.appendChild(script)
+      }
+    
+
+      // if the orderId does not match the id in URL, use dispatch to fetch the most recent order
+      // if the pay is success, get order detail again
+      if(!order || order._id !== orderId || successPay){
+          // or once you pay, keep refreshing
+          dispatch({ type: ORDER_PAY_RESET }) // dispatch directlt without action
+          dispatch(getOrderDetails(orderId))
+      } else if(!order.isPaid){
+        if(!window.paypal){ // if there is no paypal script
+          addPayPalScript()
+        }else{
+          setSdkReady(true)
+        }
+      }
+    }, [dispatch, orderId, order, successPay])
+
+    const successPaymentHandler = (paymentResult) => {
+      dispatch(payOrder(orderId, paymentResult)) // update db to paid
+    }
 
   return loading ? <Loader /> : error ? <Message variant='danger'>{error}</Message> :
   <>
@@ -113,7 +150,38 @@ const OrderScreen = () => {
                   <Col>${order.totalPrice}</Col>
                 </Row>
               </ListGroup.Item>
-              
+              {!order.isPaid && (
+                <ListGroup.Item>
+                  {loadingPay && <Loader />}
+                  {!sdkReady ? <Loader /> : 
+                    <PayPalScriptProvider>
+                      <PayPalButtons createOrder={(data, actions) => {
+                        return actions.order.create({
+                          purchase_units: [
+                            {
+                              amount: {
+                                currency_code: 'USD',
+                                value: order.totalPrice,
+                              },
+                            },
+                          ],
+                        })
+                      }} onApprove={function (data, actions) {
+                          return actions.order.capture().then(function () {
+                            const paymentResult = {
+                              id: data.orderID,
+                              status: 'COMPLETED',
+                              update_time: Date.now(),
+                              payerId: data.payerID
+                            }
+
+                            successPaymentHandler(paymentResult)
+                          });
+                      }}/>
+                    </PayPalScriptProvider>
+                  }
+                </ListGroup.Item>
+              )}
             </ListGroup>
           </Card>
         </Col>
