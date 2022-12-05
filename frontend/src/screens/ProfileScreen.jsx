@@ -90,7 +90,7 @@ const ProfileScreen = () => {
                 </Button>
             </Form>
         </Col>
-        <Col md={9}>
+        {!user.isAdmin && (<Col md={9}>
             <h2>My Orders</h2>
             {loadingOrders ? <Loader /> : errorOrders ? <Message variant='danger'>{errorOrders}</Message> : (
               <Table striped bordered hover responsive className='table-sm'>
@@ -122,7 +122,7 @@ const ProfileScreen = () => {
                 </tbody>
               </Table> 
             )}
-        </Col>
+        </Col>)}
     </Row>
   )
 }

@@ -19,6 +19,7 @@ const getProductById = asyncHandler (async(req, res) => {
 
     if(product){
         res.json(product);
+        console.log(product)
     }else{
         // id must be a formatted id and not found
         res.status(404);
