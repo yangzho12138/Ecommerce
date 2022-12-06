@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios';
 import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";
-import { Link, useParams } from 'react-router-dom'
-import { Row, Col, ListGroup, Image, Card } from 'react-bootstrap'
+import { Link, useParams, useNavigate } from 'react-router-dom'
+import { Row, Col, ListGroup, Image, Card, Button } from 'react-bootstrap'
 import { useDispatch, useSelector } from 'react-redux';
 import Message from '../components/Message';
 import Loader from '../components/Loader';
-import { getOrderDetails, payOrder } from '../actions/orderActions';
-import { ORDER_PAY_RESET } from '../constants/orderConstants';
+import { getOrderDetails, payOrder, deliverOrder } from '../actions/orderActions';
+import { ORDER_PAY_RESET, ORDER_DELIVER_RESET } from '../constants/orderConstants';
 
 const OrderScreen = () => {
     const params = useParams()
@@ -18,8 +18,14 @@ const OrderScreen = () => {
     const orderDetails = useSelector(state => state.orderDetails)
     const { order, loading, error } = orderDetails
 
+    const userLogin = useSelector(state => state.userLogin)
+    const { userInfo } = userLogin
+
     const orderPay = useSelector(state => state.orderPay)
     const { loading: loadingPay, success: successPay } = orderPay // rename
+
+    const orderDeliver = useSelector(state => state.orderDeliver)
+    const { loading: loadingDeliver, success: successDeliver } = orderDeliver
 
     if(!loading){
         // Keep two decimal places
@@ -32,7 +38,12 @@ const OrderScreen = () => {
     }
 
     const dispatch = useDispatch()
+    const navigate = useNavigate()
     useEffect(() => {
+      if(!userInfo){
+        navigate('/login')
+      }
+
       const addPayPalScript = async() => {
         // must have data: the return value is a response and the id is stored in data section
         const { data: clientId } = await axios.get('/api/config/paypal')
@@ -51,9 +62,10 @@ const OrderScreen = () => {
 
       // if the orderId does not match the id in URL, use dispatch to fetch the most recent order
       // if the pay is success, get order detail again
-      if(!order || order._id !== orderId || successPay){
+      if(!order || order._id !== orderId || successPay || successDeliver){
           // or once you pay, keep refreshing
           dispatch({ type: ORDER_PAY_RESET }) // dispatch directlt without action
+          dispatch({ type: ORDER_DELIVER_RESET })
           dispatch(getOrderDetails(orderId))
       } else if(!order.isPaid){
         if(!window.paypal){ // if there is no paypal script
@@ -62,10 +74,14 @@ const OrderScreen = () => {
           setSdkReady(true)
         }
       }
-    }, [dispatch, orderId, order, successPay])
+    }, [dispatch, navigate, userInfo, orderId, order, successPay, successDeliver])
 
     const successPaymentHandler = (paymentResult) => {
       dispatch(payOrder(orderId, paymentResult)) // update db to paid
+    }
+
+    const deliverHandler = () => {
+      dispatch(deliverOrder(order))
     }
 
   return loading ? <Loader /> : error ? <Message variant='danger'>{error}</Message> :
@@ -180,6 +196,12 @@ const OrderScreen = () => {
                       }}/>
                     </PayPalScriptProvider>
                   }
+                </ListGroup.Item>
+              )}
+              {loadingDeliver && <Loader />}
+              {userInfo && userInfo.isAdmin && order.isPaid && !order.isDelivered && (
+                <ListGroup.Item className='text-center'>
+                  <Button type='button' className='btn btn-block' onClick={deliverHandler}>Mark As Delivered</Button>
                 </ListGroup.Item>
               )}
             </ListGroup>
